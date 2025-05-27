@@ -13,8 +13,10 @@
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",
+    "@types/crypto-js": "^4.2.2",
     "@vueuse/core": "^13.2.0",
     "axios": "^1.9.0",
+    "crypto-js": "^4.2.0",
     "element-plus": "^2.9.11",
     "nprogress": "^0.2.0",
     "pinia": "^3.0.1",

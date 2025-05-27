@@ -36,16 +36,16 @@ const handleLogin = async () => {
     if (valid) {
       try {
         isLoading.value = true
-        const success = await userStore.login(loginForm.username, loginForm.password)
+        const result = await userStore.login(loginForm.username, loginForm.password)
         
-        if (success) {
-          ElMessage.success('登录成功')
+        if (result.success) {
+          ElMessage.success(result.message)
           
           // Redirect to the page the user was trying to access, or to home
           const redirectPath = route.query.redirect as string || '/'
           router.push(redirectPath)
         } else {
-          ElMessage.error('登录失败，请检查用户名和密码')
+          ElMessage.error(result.message)
         }
       } catch (error) {
         console.error('Login error:', error)

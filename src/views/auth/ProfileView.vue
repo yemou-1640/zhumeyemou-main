@@ -48,7 +48,7 @@ onMounted(async () => {
     if (attractionsStore.attractions.length === 0) {
       await attractionsStore.fetchAttractions()
     }
-    
+
     // Get user data from store
     if (userStore.user) {
       profileForm.username = userStore.user.username || ''
@@ -57,10 +57,10 @@ onMounted(async () => {
       profileForm.bio = userStore.user.bio || '这个用户很懒，还没有填写个人简介。'
       profileForm.location = userStore.user.location || '未设置'
       profileForm.phone = userStore.user.phone || ''
-      
+
       avatarUrl.value = profileForm.avatar
     }
-    
+
     // Get favorite count
     favoriteCount.value = attractionsStore.favorites.length
   } catch (error) {
@@ -79,7 +79,7 @@ const toggleEditMode = () => {
 // Update profile
 const updateProfile = async () => {
   if (!formRef.value) return
-  
+
   await formRef.value.validate(async (valid: boolean) => {
     if (valid) {
       try {
@@ -92,7 +92,7 @@ const updateProfile = async () => {
           location: profileForm.location,
           phone: profileForm.phone
         })
-        
+
         ElMessage.success('个人资料更新成功')
         isEditing.value = false
       } catch (error) {
@@ -114,7 +114,7 @@ const cancelEdit = () => {
     profileForm.location = userStore.user.location || '未设置'
     profileForm.phone = userStore.user.phone || ''
   }
-  
+
   isEditing.value = false
 }
 
@@ -123,7 +123,7 @@ const handleAvatarChange = (e: Event) => {
   const target = e.target as HTMLInputElement
   if (target.files && target.files[0]) {
     const file = target.files[0]
-    
+
     // In a real app, you would upload the file to a server
     // For demo purposes, we'll just use a FileReader to get a data URL
     const reader = new FileReader()
@@ -197,6 +197,9 @@ const handleLogout = () => {
   userStore.logout()
   router.push('/login')
 }
+
+// @ts-ignore
+console.log('userStore actions:', userStore.updateProfile, userStore.updateUserInfo)
 </script>
 
 <template>
@@ -208,7 +211,7 @@ const handleLogout = () => {
         <p class="profile-subtitle">管理您的个人资料和偏好设置</p>
       </div>
     </section>
-    
+
     <!-- Profile Content -->
     <section class="profile-content">
       <div class="container">
@@ -216,129 +219,144 @@ const handleLogout = () => {
         <div v-if="isLoading" class="loading-container">
           <el-skeleton :rows="10" animated />
         </div>
-        
+
         <div v-else class="profile-layout">
           <!-- Profile Card -->
           <div class="profile-card">
             <div class="profile-header">
               <div class="profile-avatar-container">
                 <img :src="avatarUrl" alt="用户头像" class="profile-avatar" />
-                
+
                 <div v-if="isEditing" class="avatar-upload">
                   <label for="avatar-upload" class="avatar-upload-label">
-                    <el-icon><Upload /></el-icon>
+                    <el-icon>
+                      <Upload />
+                    </el-icon>
                     更换头像
                   </label>
-                  <input 
-                    id="avatar-upload" 
-                    type="file" 
-                    accept="image/*" 
-                    class="avatar-upload-input" 
-                    @change="handleAvatarChange"
-                  />
+                  <input id="avatar-upload" type="file" accept="image/*" class="avatar-upload-input"
+                    @change="handleAvatarChange" />
                 </div>
               </div>
-              
+
               <div class="profile-info">
                 <h2 class="profile-name">{{ profileForm.username }}</h2>
                 <p class="profile-email">{{ profileForm.email }}</p>
-                
+
                 <div class="profile-stats">
                   <div class="stat-item">
                     <div class="stat-value">{{ favoriteCount }}</div>
                     <div class="stat-label">收藏</div>
                   </div>
-                  
+
                   <div class="stat-item">
                     <div class="stat-value">0</div>
                     <div class="stat-label">评论</div>
                   </div>
-                  
+
                   <div class="stat-item">
                     <div class="stat-value">0</div>
                     <div class="stat-label">足迹</div>
                   </div>
                 </div>
               </div>
-              
+
               <div class="profile-actions">
                 <template v-if="!isEditing">
                   <el-button type="primary" @click="toggleEditMode">
-                    <el-icon><Edit /></el-icon>
+                    <el-icon>
+                      <Edit />
+                    </el-icon>
                     编辑资料
                   </el-button>
-                  
+
                   <el-dropdown trigger="click">
                     <el-button>
-                      <el-icon><More /></el-icon>
+                      <el-icon>
+                        <More />
+                      </el-icon>
                     </el-button>
                     <template #dropdown>
                       <el-dropdown-menu>
                         <el-dropdown-item @click="goToFavorites">
-                          <el-icon><Star /></el-icon>
+                          <el-icon>
+                            <Star />
+                          </el-icon>
                           我的收藏
                         </el-dropdown-item>
                         <el-dropdown-item divided @click="handleLogout">
-                          <el-icon><SwitchButton /></el-icon>
+                          <el-icon>
+                            <SwitchButton />
+                          </el-icon>
                           退出登录
                         </el-dropdown-item>
                       </el-dropdown-menu>
                     </template>
                   </el-dropdown>
                 </template>
-                
+
                 <template v-else>
                   <el-button type="primary" @click="updateProfile">
-                    <el-icon><Check /></el-icon>
+                    <el-icon>
+                      <Check />
+                    </el-icon>
                     保存
                   </el-button>
-                  
+
                   <el-button @click="cancelEdit">
-                    <el-icon><Close /></el-icon>
+                    <el-icon>
+                      <Close />
+                    </el-icon>
                     取消
                   </el-button>
                 </template>
               </div>
             </div>
-            
+
             <div class="profile-body">
               <div v-if="!isEditing" class="profile-details">
                 <div class="detail-section">
                   <h3 class="section-title">个人简介</h3>
                   <p class="bio-text">{{ profileForm.bio }}</p>
                 </div>
-                
+
                 <div class="detail-section">
                   <h3 class="section-title">个人信息</h3>
-                  
+
                   <div class="detail-item">
                     <div class="detail-label">
-                      <el-icon><Location /></el-icon>
+                      <el-icon>
+                        <Location />
+                      </el-icon>
                       所在地
                     </div>
                     <div class="detail-value">{{ profileForm.location }}</div>
                   </div>
-                  
+
                   <div class="detail-item">
                     <div class="detail-label">
-                      <el-icon><Phone /></el-icon>
+                      <el-icon>
+                        <Phone />
+                      </el-icon>
                       手机号码
                     </div>
                     <div class="detail-value">{{ profileForm.phone || '未设置' }}</div>
                   </div>
-                  
+
                   <div class="detail-item">
                     <div class="detail-label">
-                      <el-icon><Message /></el-icon>
+                      <el-icon>
+                        <Message />
+                      </el-icon>
                       邮箱
                     </div>
                     <div class="detail-value">{{ profileForm.email }}</div>
                   </div>
                 </div>
-                
+
                 <div class="detail-section">
                   <h3 class="section-title">账号安全</h3>
-                  
+
                   <div class="security-item">
                     <div class="security-info">
                       <div class="security-title">密码</div>
@@ -348,46 +366,35 @@ const handleLogout = () => {
                   </div>
                 </div>
               </div>
-              
-              <el-form
-                v-else
-                ref="formRef"
-                :model="profileForm"
-                :rules="rules"
-                label-position="top"
-              >
+
+              <el-form v-else ref="formRef" :model="profileForm" :rules="rules" label-position="top">
                 <div class="form-section">
                   <h3 class="section-title">基本信息</h3>
-                  
+
                   <el-form-item label="用户名" prop="username">
                     <el-input v-model="profileForm.username" />
                   </el-form-item>
-                  
+
                   <el-form-item label="邮箱" prop="email">
                     <el-input v-model="profileForm.email" />
                   </el-form-item>
                 </div>
-                
+
                 <div class="form-section">
                   <h3 class="section-title">个人简介</h3>
-                  
+
                   <el-form-item label="简介">
-                    <el-input 
-                      v-model="profileForm.bio" 
-                      type="textarea" 
-                      :rows="4" 
-                      placeholder="介绍一下自己吧"
-                    />
+                    <el-input v-model="profileForm.bio" type="textarea" :rows="4" placeholder="介绍一下自己吧" />
                   </el-form-item>
                 </div>
-                
+
                 <div class="form-section">
                   <h3 class="section-title">联系方式</h3>
-                  
+
                   <el-form-item label="所在地">
                     <el-input v-model="profileForm.location" />
                   </el-form-item>
-                  
+
                   <el-form-item label="手机号码" prop="phone">
                     <el-input v-model="profileForm.phone" />
                   </el-form-item>
@@ -395,19 +402,19 @@ const handleLogout = () => {
               </el-form>
             </div>
           </div>
-          
+
           <!-- Sidebar -->
           <div class="profile-sidebar">
             <div class="sidebar-card">
               <h3 class="sidebar-title">我的收藏</h3>
-              
+
               <div v-if="favoriteCount === 0" class="empty-favorites">
                 <p>您还没有收藏任何景点</p>
                 <el-button type="primary" @click="router.push('/attractions')">
                   浏览景点
                 </el-button>
               </div>
-              
+
               <div v-else class="favorites-summary">
                 <p>您已收藏 {{ favoriteCount }} 个景点</p>
                 <el-button type="primary" @click="goToFavorites">
@@ -415,29 +422,35 @@ const handleLogout = () => {
                 </el-button>
               </div>
             </div>
-            
+
             <div class="sidebar-card">
               <h3 class="sidebar-title">账号绑定</h3>
-              
+
               <div class="binding-item">
                 <div class="binding-info">
-                  <el-icon><ChatDotRound /></el-icon>
+                  <el-icon>
+                    <ChatDotRound />
+                  </el-icon>
                   <span>微信</span>
                 </div>
                 <el-button size="small">绑定</el-button>
               </div>
-              
+
               <div class="binding-item">
                 <div class="binding-info">
-                  <el-icon><ChatLineRound /></el-icon>
+                  <el-icon>
+                    <ChatLineRound />
+                  </el-icon>
                   <span>微博</span>
                 </div>
                 <el-button size="small">绑定</el-button>
               </div>
-              
+
               <div class="binding-item">
                 <div class="binding-info">
-                  <el-icon><Phone /></el-icon>
+                  <el-icon>
+                    <Phone />
+                  </el-icon>
                   <span>手机号</span>
                 </div>
                 <el-button size="small" type="success" disabled>已绑定</el-button>
@@ -705,32 +718,32 @@ const handleLogout = () => {
   .profile-layout {
     grid-template-columns: 1fr;
   }
-  
+
   .profile-header {
     flex-direction: column;
     align-items: center;
     text-align: center;
   }
-  
+
   .profile-avatar-container {
     margin-right: 0;
     margin-bottom: 1.5rem;
   }
-  
+
   .profile-actions {
     position: static;
     margin-top: 1.5rem;
     justify-content: center;
   }
-  
+
   .profile-stats {
     justify-content: center;
   }
-  
+
   .detail-item {
     flex-direction: column;
   }
-  
+
   .detail-label {
     margin-bottom: 0.5rem;
   }
@@ -740,7 +753,7 @@ const handleLogout = () => {
   .profile-title {
     font-size: 2rem;
   }
-  
+
   .profile-subtitle {
     font-size: 1.25rem;
   }

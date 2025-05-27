@@ -47,15 +47,15 @@ const logout = () => {
             关于
           </router-link>
           
-          <template v-if="userStore.isLoggedIn">
+          <template v-if="userStore.isLoggedIn && userStore.user">
             <el-dropdown trigger="click">
               <div class="user-avatar flex items-center gap-2 cursor-pointer">
                 <img 
-                  :src="userStore.user?.avatar || 'https://placekitten.com/100/100'" 
+                  :src="userStore.user.avatar || 'https://placekitten.com/100/100'" 
                   alt="User avatar" 
                   class="w-8 h-8 rounded-full"
                 />
-                <span>{{ userStore.user?.username }}</span>
+                <span>{{ userStore.user.username }}</span>
                 <el-icon><ArrowDown /></el-icon>
               </div>
               <template #dropdown>

@@ -118,53 +118,80 @@ const MAX_RETRIES = 3
 
 // 初始化地图
 const initMap = async () => {
-  if (!mapContainer.value || !attraction.value.latitude || !attraction.value.longitude) return
-  
+  console.log('开始初始化地图...')
+
+  // 等待 DOM 更新
   await nextTick()
-  
+
+  // 确保地图容器存在
+  if (!mapContainer.value) {
+    console.error('地图容器不存在，等待 DOM 更新...')
+    setTimeout(initMap, 1000)
+    return
+  }
+
+  // 确保坐标存在
+  if (!attraction.value.latitude || !attraction.value.longitude) {
+    console.error('景点坐标不存在:', {
+      latitude: attraction.value.latitude,
+      longitude: attraction.value.longitude
+    })
+    return
+  }
+
   try {
     // 检查 AMap 是否已加载
     if (typeof AMap === 'undefined') {
-      throw new Error('高德地图 API 未加载')
+      console.error('高德地图 API 未加载，等待加载...')
+      setTimeout(initMap, 1000)
+      return
     }
-    
+
+    console.log('创建地图实例...')
     // 创建地图实例
     map.value = new AMap.Map(mapContainer.value, {
       zoom: 13,
       center: [attraction.value.longitude, attraction.value.latitude],
       viewMode: '3D',
-      resizeEnable: true
+      resizeEnable: true,
+      timeout: 10000 // 增加超时时间
     })
-    
-    // 添加工具条和比例尺
-    map.value.plugin(['AMap.ToolBar', 'AMap.Scale'], () => {
-      map.value.addControl(new AMap.ToolBar())
-      map.value.addControl(new AMap.Scale())
+
+    // 等待地图加载完成
+    map.value.on('complete', () => {
+      console.log('地图加载完成')
+
+      // 添加工具条和比例尺
+      map.value.plugin(['AMap.ToolBar', 'AMap.Scale'], () => {
+        map.value.addControl(new AMap.ToolBar())
+        map.value.addControl(new AMap.Scale())
+      })
+
+      // 创建标记点
+      marker.value = new AMap.Marker({
+        position: [attraction.value.longitude, attraction.value.latitude],
+        title: attraction.value.name,
+        animation: 'AMAP_ANIMATION_DROP'
+      })
+
+      // 将标记点添加到地图
+      map.value.add(marker.value)
+
+      // 自适应地图大小
+      map.value.resize()
     })
-    
-    // 创建标记点
-    marker.value = new AMap.Marker({
-      position: [attraction.value.longitude, attraction.value.latitude],
-      title: attraction.value.name,
-      animation: 'AMAP_ANIMATION_DROP'
-    })
-    
-    // 将标记点添加到地图
-    map.value.add(marker.value)
-    
-    // 自适应地图大小
-    map.value.resize()
-    
+
     // 重置重试次数
     mapInitRetries.value = 0
+    console.log('地图初始化完成')
   } catch (error) {
     console.error('地图初始化失败:', error)
-    
+
     // 重试机制
     if (mapInitRetries.value < MAX_RETRIES) {
       mapInitRetries.value++
       console.log(`尝试重新初始化地图 (${mapInitRetries.value}/${MAX_RETRIES})`)
-      setTimeout(initMap, 1000) // 1秒后重试
+      setTimeout(initMap, 2000) // 增加重试间隔到2秒
     }
   }
 }
@@ -172,9 +199,10 @@ const initMap = async () => {
 // Load attraction data
 onMounted(async () => {
   try {
+    console.log('开始加载景点数据...')
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 500))
-    
+
     // Mock data based on ID
     const mockAttractions = [
       {
@@ -241,9 +269,9 @@ onMounted(async () => {
         price: '¥135',
         openingHours: '07:30-16:30',
         tags: ['山岳', '自然', '地质'],
-        features: ['灵峰','三折瀑','灵岩','大龙湫'],
+        features: ['灵峰', '三折瀑', '灵岩', '大龙湫'],
         latitude: 28.37,
-        longitude: 121.06 
+        longitude: 121.06
       },
       {
         id: 5,
@@ -258,9 +286,9 @@ onMounted(async () => {
         price: '¥160',
         openingHours: '全天开放',
         tags: ['佛教', '文化', '岛屿'],
-        features: ['普济禅寺（前寺）','法雨禅寺（后寺）','慧济禅寺（佛顶山寺）'],
+        features: ['普济禅寺（前寺）', '法雨禅寺（后寺）', '慧济禅寺（佛顶山寺）'],
         latitude: 30.0108,
-        longitude:  122.3864
+        longitude: 122.3864
       },
       {
         id: 6,
@@ -275,7 +303,7 @@ onMounted(async () => {
         price: '¥210',
         openingHours: '08:00-17:30',
         tags: ['影视', '文化', '娱乐'],
-        features: ['广州街·香港街','秦王宫','清明上河图','明清宫苑','梦幻谷'],
+        features: ['广州街·香港街', '秦王宫', '清明上河图', '明清宫苑', '梦幻谷'],
         latitude: 29.179068,
         longitude: 120.298083
       },
@@ -292,7 +320,7 @@ onMounted(async () => {
         price: '¥100',
         openingHours: '08:00-17:00',
         tags: ['古镇', '水乡', '文化'],
-        features: ['张石铭故居','刘氏梯号','小莲庄','张静江故居','百间楼'],
+        features: ['张石铭故居', '刘氏梯号', '小莲庄', '张静江故居', '百间楼'],
         latitude: 30.8694,
         longitude: 120.41996
       },
@@ -309,34 +337,42 @@ onMounted(async () => {
         price: '¥80',
         openingHours: '08:00-17:00',
         tags: ['文化', '历史', '名人'],
-        features: ['绍兴鲁迅故居','百草园','三味书屋','鲁迅祖居','土谷祠','长庆寺'],
+        features: ['绍兴鲁迅故居', '百草园', '三味书屋', '鲁迅祖居', '土谷祠', '长庆寺'],
         latitude: 29.995,
         longitude: 120.581111
       }
     ]
-    
+
     // Find the attraction by ID
     const foundAttraction = mockAttractions.find(a => a.id === attractionId.value)
     if (foundAttraction) {
+      console.log('找到景点数据:', foundAttraction)
       attraction.value = foundAttraction
+
       // 在数据加载完成后初始化地图
-      await initMap()
+      await nextTick()
+      // 延迟初始化地图，确保 DOM 已完全渲染
+      setTimeout(() => {
+        console.log('开始初始化地图...')
+        initMap()
+      }, 1000)
     } else {
+      console.error('未找到景点数据')
       router.push('/attractions')
     }
-    
+
     // Load related attractions
     relatedAttractions.value = mockAttractions
       .filter(a => a.id !== attractionId.value)
       .slice(0, 3)
-    
+
     // Load reviews
     reviews.value = [
       {
         id: 1,
         user: {
-          name: '张三',
-          avatar: 'https://placekitten.com/50/50'
+          name: '哈奇',
+          avatar: '/src/assets/xiaoba.gif'
         },
         rating: 5,
         comment: '景色非常优美，值得一游！',
@@ -345,25 +381,40 @@ onMounted(async () => {
       {
         id: 2,
         user: {
-          name: '李四',
-          avatar: 'https://placekitten.com/51/51'
+          name: '吉伊',
+          avatar: '/src/assets/jiyi.gif'
         },
         rating: 4,
         comment: '交通便利，环境整洁。',
         date: '2024-03-14'
       }
     ]
-    
+
     isLoading.value = false
   } catch (error) {
     console.error('加载景点数据失败:', error)
-    isLoading.value = false
+    router.push('/attractions')
   }
 })
 
-// 组件卸载时销毁地图实例
+// 监听窗口大小变化，重新调整地图大小
+onMounted(() => {
+  window.addEventListener('resize', () => {
+    if (map.value) {
+      console.log('调整地图大小...')
+      map.value.resize()
+    }
+  })
+})
+
 onBeforeUnmount(() => {
+  window.removeEventListener('resize', () => {
+    if (map.value) {
+      map.value.resize()
+    }
+  })
   if (map.value) {
+    console.log('销毁地图实例...')
     map.value.destroy()
   }
 })
@@ -378,7 +429,7 @@ const toggleFavorite = () => {
     })
     return
   }
-  
+
   // 调用attractionsStore的toggleFavorite方法
   attractionsStore.toggleFavorite(attractionId.value)
 }
@@ -395,7 +446,7 @@ const goBack = () => {
     <div v-if="isLoading" class="loading-container">
       <el-skeleton :rows="10" animated />
     </div>
-    
+
     <template v-else>
       <!-- Hero Section -->
       <section class="attraction-hero">
@@ -404,28 +455,36 @@ const goBack = () => {
         <div class="container">
           <div class="attraction-hero-content">
             <button class="back-button" @click="goBack">
-              <el-icon><Back /></el-icon>
+              <el-icon>
+                <Back />
+              </el-icon>
               返回
             </button>
             <h1 class="attraction-title">{{ attraction.name }}</h1>
             <div class="attraction-meta">
               <div class="attraction-rating">
-                <el-icon><Star /></el-icon>
+                <el-icon>
+                  <Star />
+                </el-icon>
                 <span>{{ attraction.rating }}</span>
               </div>
               <div class="attraction-location">
-                <el-icon><Location /></el-icon>
+                <el-icon>
+                  <Location />
+                </el-icon>
                 <span>{{ attraction.location }}</span>
               </div>
               <div class="attraction-category">
-                <el-icon><Collection /></el-icon>
+                <el-icon>
+                  <Collection />
+                </el-icon>
                 <span>{{ attraction.category }}</span>
               </div>
             </div>
           </div>
         </div>
       </section>
-      
+
       <!-- Main Content -->
       <section class="attraction-content">
         <div class="container">
@@ -435,50 +494,39 @@ const goBack = () => {
               <div class="attraction-description card">
                 <h2>景点介绍</h2>
                 <p>{{ attraction.fullDescription }}</p>
-                
+
                 <div class="attraction-tags">
-                  <el-tag 
-                    v-for="tag in attraction.tags" 
-                    :key="tag" 
-                    size="small" 
-                    class="attraction-tag"
-                  >
+                  <el-tag v-for="tag in attraction.tags" :key="tag" size="small" class="attraction-tag">
                     {{ tag }}
                   </el-tag>
                 </div>
               </div>
-              
+
               <div class="attraction-gallery card">
                 <h2>景点图片</h2>
                 <div class="gallery-grid">
-                  <div 
-                    v-for="(image, index) in attraction.images" 
-                    :key="index" 
-                    class="gallery-item"
-                  >
+                  <div v-for="(image, index) in attraction.images" :key="index" class="gallery-item">
                     <img :src="image" :alt="`${attraction.name} - 图片 ${index + 1}`" />
                   </div>
                 </div>
               </div>
-              
+
               <div class="attraction-features card">
                 <h2>景点特色</h2>
                 <ul class="features-list">
                   <li v-for="(feature, index) in attraction.features" :key="index">
-                    <el-icon><Check /></el-icon>
+                    <el-icon>
+                      <Check />
+                    </el-icon>
                     <span>{{ feature }}</span>
                   </li>
                 </ul>
               </div>
-              
+
               <div class="attraction-reviews card">
                 <h2>游客评价</h2>
                 <div class="reviews-list">
-                  <div 
-                    v-for="review in reviews" 
-                    :key="review.id" 
-                    class="review-item"
-                  >
+                  <div v-for="review in reviews" :key="review.id" class="review-item">
                     <div class="review-header">
                       <div class="review-user">
                         <img :src="review.user.avatar" :alt="review.user.name" class="review-avatar" />
@@ -500,65 +548,75 @@ const goBack = () => {
                 </div>
               </div>
             </div>
-            
+
             <!-- Sidebar -->
             <div class="attraction-sidebar">
               <div class="attraction-info card">
                 <h3>景点信息</h3>
                 <div class="info-item">
-                  <el-icon><Ticket /></el-icon>
+                  <el-icon>
+                    <Ticket />
+                  </el-icon>
                   <div>
                     <div class="info-label">门票</div>
                     <div class="info-value">{{ attraction.price }}</div>
                   </div>
                 </div>
                 <div class="info-item">
-                  <el-icon><Clock /></el-icon>
+                  <el-icon>
+                    <Clock />
+                  </el-icon>
                   <div>
                     <div class="info-label">开放时间</div>
                     <div class="info-value">{{ attraction.openingHours }}</div>
                   </div>
                 </div>
                 <div class="info-item">
-                  <el-icon><Location /></el-icon>
+                  <el-icon>
+                    <Location />
+                  </el-icon>
                   <div>
                     <div class="info-label">地址</div>
                     <div class="info-value">{{ attraction.location }}</div>
                   </div>
                 </div>
-                
+
                 <div class="action-buttons">
                   <button class="btn btn-primary btn-block">
-                    <el-icon><Ticket /></el-icon>
+                    <el-icon>
+                      <Ticket />
+                    </el-icon>
                     预订门票
                   </button>
                   <button class="btn btn-outline btn-block" @click="toggleFavorite">
-                    <el-icon v-if="isFavorite"><StarFilled /></el-icon>
-                    <el-icon v-else><Star /></el-icon>
+                    <el-icon v-if="isFavorite">
+                      <StarFilled />
+                    </el-icon>
+                    <el-icon v-else>
+                      <Star />
+                    </el-icon>
                     {{ isFavorite ? '已收藏' : '收藏' }}
                   </button>
                 </div>
               </div>
-              
+
               <div class="attraction-map card">
                 <h3>位置信息</h3>
-                <div ref="mapContainer" class="map-container"></div>
+                <div ref="mapContainer" class="map-container" style="width: 100%; height: 400px;"></div>
               </div>
-              
+
               <div class="related-attractions card">
                 <h3>相关景点</h3>
                 <div class="related-list">
-                  <div 
-                    v-for="related in relatedAttractions" 
-                    :key="related.id" 
-                    class="related-item"
-                    @click="$router.push(`/attractions/${related.id}`)"
-                  >
+                  <div v-for="related in relatedAttractions" :key="related.id" class="related-item"
+                    @click="$router.push(`/attractions/${related.id}`)">
                     <img :src="related.images[0]" :alt="related.name" class="related-image" />
                     <div class="related-info">
                       <h4 class="related-name">{{ related.name }}</h4>
                       <div class="related-rating">
-                        <el-icon><Star /></el-icon>
+                        <el-icon>
+                          <Star />
+                        </el-icon>
                         <span>{{ related.rating }}</span>
                       </div>
                     </div>
@@ -580,6 +638,8 @@ const goBack = () => {
   border-radius: 8px;
   overflow: hidden;
   margin-top: 1rem;
+  position: relative;
+  z-index: 1;
 }
 
 .attraction-map {
@@ -588,6 +648,8 @@ const goBack = () => {
   background: #fff;
   border-radius: 8px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 1;
 }
 
 .attraction-map h3 {
